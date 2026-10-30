@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Prox-WHALE model: predicted single-session SWL success for proximal ureteral stones from stone width, hydronephrosis grade and age.">
+<title>Prox-WHALE Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; calculator on top in two panels (inputs | result), then formula, points, examples and table */
+:root{
+  --bg:#f3f5f6; --paper:#ffffff; --ink:#172126; --muted:#5a6870; --line:#d6dde0;
+  --accent:#2f4b8a; --accent-soft:#e6ebf6;
+  --good:#1f7a4d; --mid:#a76a10; --low:#b03a2e;
+  --good-soft:#e2f2ea; --mid-soft:#fbefd9; --low-soft:#f8e3e0;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1518; --paper:#172025; --ink:#e3eaed; --muted:#97a6ad; --line:#2b383e;
+  --accent:#9cb2ec; --accent-soft:#1f2a44;
+  --good:#5fc794; --mid:#e5b25a; --low:#ee8a7e;
+  --good-soft:#163428; --mid-soft:#3a2d15; --low-soft:#3d1f1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1518; --paper:#172025; --ink:#e3eaed; --muted:#97a6ad; --line:#2b383e;
+  --accent:#9cb2ec; --accent-soft:#1f2a44;
+  --good:#5fc794; --mid:#e5b25a; --low:#ee8a7e;
+  --good-soft:#163428; --mid-soft:#3a2d15; --low-soft:#3d1f1b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.wrap{max-width:62rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:2.25rem 4rem;display:flex;flex-direction:column;gap:2.5rem}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+.sub{font-family:var(--display);font-size:clamp(1.1rem,3vw,1.35rem);font-weight:500;line-height:1.3;max-width:48rem}
+.expand{font-family:var(--mono);font-size:.85rem;color:var(--muted)}
+h1{font-size:clamp(2.2rem,6vw,3.2rem);font-weight:700;letter-spacing:-.01em;line-height:1.05}
+h2{font-size:1.45rem;font-weight:600;line-height:1.2}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+header{display:flex;flex-direction:column;gap:.75rem;border-bottom:2px solid var(--ink);padding-bottom:1.25rem}
+header .lede{max-width:44rem;color:var(--muted);font-size:1.02rem}
+.acro{display:flex;flex-wrap:wrap;gap:.4rem .9rem;font-family:var(--mono);font-size:.85rem;color:var(--ink)}
+.acro b{color:var(--accent);font-weight:500}
+.tag{align-self:flex-start;font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;background:var(--mid-soft);color:var(--mid);padding:.2rem .55rem;border-radius:3px}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+@media (max-width:720px){.calc{grid-template-columns:1fr}}
+.inputs{padding:1.5rem clamp(1rem,3vw,1.75rem);display:flex;flex-direction:column;gap:1.4rem;min-width:0}
+.field{display:flex;flex-direction:column;gap:.45rem}
+.field label,.field .lab{font-weight:600;font-size:.95rem;display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
+.field .unit{font-family:var(--mono);font-size:.78rem;color:var(--muted);font-weight:400}
+.row{display:flex;gap:.75rem;align-items:center}
+input[type=range]{flex:1;min-width:0;accent-color:var(--accent);height:1.6rem}
+input[type=number]{width:5.5rem;font-family:var(--mono);font-size:1rem;padding:.4rem .5rem;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
+.seg button{font-family:var(--display);font-weight:600;font-size:1.05rem;padding:.55rem 0;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.hint{font-size:.8rem;color:var(--muted)}
+.warn{font-size:.8rem;color:var(--mid);min-height:1.2em}
+.result{padding:1.5rem clamp(1rem,3vw,1.75rem);background:var(--accent-soft);display:flex;flex-direction:column;gap:1rem;min-width:0}
+.prob{display:flex;align-items:baseline;gap:.5rem}
+.prob .big{font-family:var(--display);font-weight:700;font-size:clamp(3.4rem,10vw,4.6rem);line-height:1;font-variant-numeric:tabular-nums}
+.prob .pct{font-family:var(--display);font-size:1.8rem;font-weight:600}
+.band{align-self:flex-start;font-size:.82rem;font-weight:600;padding:.2rem .6rem;border-radius:999px}
+.band.good{background:var(--good-soft);color:var(--good)} .band.mid{background:var(--mid-soft);color:var(--mid)} .band.low{background:var(--low-soft);color:var(--low)}
+.bar{position:relative;height:.7rem;border-radius:999px;background:var(--line);overflow:hidden}
+.bar span{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:999px;transition:width .25s}
+@media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+.scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.detail{display:grid;grid-template-columns:auto 1fr;gap:.3rem .9rem;font-size:.9rem}
+.detail dt{color:var(--muted)} .detail dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* sections */
+section{display:flex;flex-direction:column;gap:1rem}
+section > p{max-width:46rem}
+.formula{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:1rem 1.25rem;font-family:var(--mono);font-size:.95rem;line-height:1.9;overflow-x:auto}
+.formula .k{color:var(--accent)}
+.tw{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.92rem;font-variant-numeric:tabular-nums}
+th,td{padding:.55rem .8rem;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--display);font-weight:600;font-size:.9rem;color:var(--muted)}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+.heat td.num{font-weight:500}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.25rem}
+@media (max-width:720px){.two{grid-template-columns:1fr}}
+.points-formula{font-family:var(--display);font-size:clamp(1.15rem,3.5vw,1.45rem);font-weight:600;background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:4px;padding:.9rem 1.1rem}
+.examples{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+@media (max-width:720px){.examples{grid-template-columns:1fr}}
+.ex{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.ex .who{font-weight:600}
+.ex .calcline{font-family:var(--mono);font-size:.85rem;color:var(--muted)}
+.ex .out{font-family:var(--display);font-size:1.6rem;font-weight:700}
+.ex button{align-self:flex-start;font-size:.82rem;border:1px solid var(--line);background:var(--bg);color:var(--accent);border-radius:4px;padding:.25rem .6rem;cursor:pointer}
+.notes ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem;max-width:48rem}
+footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Calculator · SWL for proximal ureteral stones</span>
+    <h1>The Prox-WHALE Model</h1>
+    <p class="expand">Width, Hydronephrosis, and Age for Lithotripsy Efficacy in Proximal Ureteral Stones</p>
+    <p class="sub">Predicting Shock Wave Lithotripsy Success in Proximal Ureteral Stones Using Stone Width, Hydronephrosis Grade, and Age</p>
+    <p class="lede">Estimates the chance of single-session shock wave lithotripsy (SWL) success for proximal ureteral stones ≤ 20 mm from three pre-treatment data points: stone width and hydronephrosis grade on non-contrast CT, and patient age.</p>
+    <div class="acro"><span><b>Prox</b>imal</span><span><b>W</b>idth</span><span><b>H</b>ydronephrosis</span><span><b>A</b>ge</span><span><b>L</b>ithotripsy</span><span><b>E</b>fficacy</span></div>
+    <span class="tag">Exploratory model · not yet validated</span>
+  </header>
+
+  <div class="calc" role="group" aria-label="Calculator">
+    <div class="inputs">
+      <div class="field">
+        <label for="w">Stone width <span class="unit">mm, on pre-SWL CT</span></label>
+        <div class="row"><input type="range" id="wr" min="2" max="13" step="0.5" value="8" aria-label="Width in mm"><input type="number" id="w" min="1" max="20" step="0.5" value="8"></div>
+        <div class="warn" id="ww"></div>
+      </div>
+      <div class="field">
+        <span class="lab" id="hl">Hydronephrosis grade <span class="unit">I to IV</span></span>
+        <div class="seg" role="radiogroup" aria-labelledby="hl" id="h">
+          <button type="button" data-v="1" aria-pressed="false">I</button>
+          <button type="button" data-v="2" aria-pressed="true">II</button>
+          <button type="button" data-v="3" aria-pressed="false">III</button>
+          <button type="button" data-v="4" aria-pressed="false">IV</button>
+        </div>
+        <div class="warn" id="hw"></div>
+      </div>
+      <div class="field">
+        <label for="a">Age <span class="unit">years</span></label>
+        <div class="row"><input type="range" id="ar" min="20" max="76" step="1" value="50" aria-label="Age in years"><input type="number" id="a" min="18" max="95" step="1" value="50"></div>
+        <div class="warn" id="aw"></div>
+      </div>
+      <p class="hint">Loaded example: 8 mm stone, grade II hydronephrosis, 50 years.</p>
+    </div>
+    <div class="result" aria-live="polite">
+      <span class="eyebrow">Predicted chance of success</span>
+      <div class="prob"><span class="big" id="p">23</span><span class="pct">%</span></div>
+      <span class="band mid" id="band">Intermediate chance</span>
+      <div><div class="bar"><span id="pbar" style="width:23%"></span></div><div class="scale"><span>0%</span><span>50%</span><span>100%</span></div></div>
+      <dl class="detail">
+        <dt>Prox-WHALE points</dt><dd id="pts">7.0</dd>
+        <dt>From the points table</dt><dd id="pp">23%</dd>
+        <dt>logit</dt><dd id="lg">−1.19</dd>
+      </dl>
+      <p class="hint">Success = residual fragments ≤ 4 mm on CT 30 days after one session. Bands: ≥ 50% high; 25–49% intermediate; &lt; 25% low (descriptive only).</p>
+    </div>
+  </div>
+
+  <section>
+    <span class="eyebrow">Full model</span>
+    <h2>The formula</h2>
+    <p>Firth logistic regression fitted in 89 patients from a single-centre prospective cohort (36 successes). Hydronephrosis enters as a number: grade I = 1, II = 2, III = 3, IV = 4.</p>
+    <div class="formula">
+      logit = <span class="k">1.3037</span> − <span class="k">0.4028</span> × width (mm) − <span class="k">0.7938</span> × hydronephrosis grade + <span class="k">0.0463</span> × age (years)<br>
+      probability of success = 1 / (1 + e<sup>−logit</sup>)
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Term</th><th class="num">Coefficient</th><th class="num">OR (95% CI)</th><th class="num">p</th></tr></thead>
+      <tbody>
+        <tr><td>Intercept</td><td class="num">1.3037</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>Stone width, per mm</td><td class="num">−0.4028</td><td class="num">0.67 (0.50–0.85)</td><td class="num">&lt;0.001</td></tr>
+        <tr><td>Hydronephrosis, per grade</td><td class="num">−0.7938</td><td class="num">0.45 (0.22–0.84)</td><td class="num">0.011</td></tr>
+        <tr><td>Age, per 10 years</td><td class="num">0.4629</td><td class="num">1.59 (1.04–2.53)</td><td class="num">0.031</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Pocket version</span>
+    <h2>Points table</h2>
+    <p>One hydronephrosis grade weighs about the same as 2 mm of width, and 10 years of age weigh about the same as −1 mm. This allows a quick mental calculation. Across the range of the sample, it stays within 5 percentage points of the full formula.</p>
+    <div class="points-formula">Points = width (mm) + 2 × hydronephrosis grade − age / 10</div>
+    <div class="two">
+      <div class="tw"><table>
+        <thead><tr><th class="num">Points</th><th class="num">Chance of success</th></tr></thead>
+        <tbody id="ptab1"></tbody>
+      </table></div>
+      <div class="tw"><table>
+        <thead><tr><th class="num">Points</th><th class="num">Chance of success</th></tr></thead>
+        <tbody id="ptab2"></tbody>
+      </table></div>
+    </div>
+    <p class="hint">More points mean a lower chance of success. For points with decimals, round to the nearest whole number when using the table.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">In practice</span>
+    <h2>Examples</h2>
+    <div class="examples" id="exs"></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Patient aged 50</span>
+    <h2>Chance of success by width and hydronephrosis</h2>
+    <div class="tw"><table class="heat">
+      <thead><tr><th>Width</th><th class="num">Grade I</th><th class="num">Grade II</th><th class="num">Grade III</th><th class="num">Grade IV</th></tr></thead>
+      <tbody id="grid"></tbody>
+    </table></div>
+    <p class="hint">Values from the full formula, in %. For other ages, use the calculator: each additional 10 years increases the predicted chance.</p>
+  </section>
+
+  <section class="notes">
+    <span class="eyebrow">Before use</span>
+    <h2>Limitations</h2>
+    <ul>
+      <li>Model derived in 89 patients from a single centre, without internal validation by resampling or external validation. It is intended for discussion and research, not for clinical decisions.</li>
+      <li>Range covered by the sample: width 2 to 13 mm, age 20 to 76 years. Grade IV hydronephrosis had only 3 patients; predictions for this grade are unreliable.</li>
+      <li>The age effect is positive (older patients had more success), the opposite of what might be expected. It needs a clinical explanation and confirmation in another sample.</li>
+      <li>Stone density and skin-to-stone distance were not included because they were not associated with success after adjustment for width.</li>
+    </ul>
+  </section>
+
+  <footer>Derived from a single-centre prospective cohort of adults undergoing SWL for proximal ureteral stones · version of 30 October 2026.</footer>
+</div>
+
+<script>
+(function(){
+  var B0=1.3037,BW=-0.4028,BH=-0.7938,BA=0.04629, AP=1.622; // AP: intercept of the points version
+  function sig(x){return 1/(1+Math.exp(-x));}
+  function exact(w,h,a){return sig(B0+BW*w+BH*h+BA*a);}
+  function points(w,h,a){return w+2*h-a/10;}
+  function byPoints(s){return sig(AP+BW*s);}
+  function fmtPct(p){var v=p*100;return v<1?"<1":(v>99?">99":String(Math.round(v)));}
+  function minus(x){return x.toFixed(2).replace('-','−');}
+  var W=document.getElementById('w'),WR=document.getElementById('wr'),A=document.getElementById('a'),AR=document.getElementById('ar');
+  var segs=Array.prototype.slice.call(document.querySelectorAll('#h button'));
+  var H=2;
+  function update(){
+    var w=parseFloat(W.value),a=parseFloat(A.value);
+    if(!isFinite(w)||!isFinite(a)){return;}
+    var p=exact(w,H,a),s=points(w,H,a);
+    document.getElementById('p').textContent=fmtPct(p);
+    document.getElementById('pbar').style.width=(p*100).toFixed(1)+'%';
+    var band=document.getElementById('band');
+    band.className='band '+(p>=0.5?'good':(p>=0.25?'mid':'low'));
+    band.textContent=p>=0.5?'High chance':(p>=0.25?'Intermediate chance':'Low chance');
+    document.getElementById('pts').textContent=s.toFixed(1).replace('-','−');
+    document.getElementById('pp').textContent=fmtPct(byPoints(Math.round(s)))+'%';
+    document.getElementById('lg').textContent=minus(B0+BW*w+BH*H+BA*a);
+    document.getElementById('ww').textContent=(w<2||w>13)?'Outside the sample range (2–13 mm): prediction less reliable.':'';
+    document.getElementById('aw').textContent=(a<20||a>76)?'Outside the sample range (20–76 years): prediction less reliable.':'';
+    document.getElementById('hw').textContent=H===4?'Grade IV: only 3 patients in the sample.':'';
+  }
+  function syncW(from){var v=parseFloat(from.value);if(!isFinite(v))return; if(from===WR){W.value=v;}else{WR.value=Math.min(13,Math.max(2,v));} update();}
+  function syncA(from){var v=parseFloat(from.value);if(!isFinite(v))return; if(from===AR){A.value=v;}else{AR.value=Math.min(76,Math.max(20,v));} update();}
+  WR.addEventListener('input',function(){syncW(WR);}); W.addEventListener('input',function(){syncW(W);});
+  AR.addEventListener('input',function(){syncA(AR);}); A.addEventListener('input',function(){syncA(A);});
+  function setH(v){H=v;segs.forEach(function(b){b.setAttribute('aria-pressed',String(+b.dataset.v===v));});update();}
+  segs.forEach(function(b){b.addEventListener('click',function(){setH(+b.dataset.v);});});
+
+  // points table
+  var rows=[];for(var s=-2;s<=15;s++){rows.push('<tr><td class="num">'+String(s).replace('-','−')+'</td><td class="num">'+fmtPct(byPoints(s))+'%</td></tr>');}
+  document.getElementById('ptab1').innerHTML=rows.slice(0,9).join('');
+  document.getElementById('ptab2').innerHTML=rows.slice(9).join('');
+
+  // examples
+  var EX=[{w:5,h:1,a:40,t:'Small stone, little dilatation'},{w:8,h:2,a:50,t:'Medium stone, moderate hydronephrosis'},{w:11,h:3,a:60,t:'Large stone, marked hydronephrosis'}];
+  var R=['','I','II','III','IV'];
+  document.getElementById('exs').innerHTML=EX.map(function(e,i){
+    var s=points(e.w,e.h,e.a);
+    return '<div class="ex"><span class="who">'+e.t+'</span><span class="calcline">'+e.w+' mm · grade '+R[e.h]+' · '+e.a+' years</span>'+
+      '<span class="calcline">Points: '+e.w+' + 2×'+e.h+' − '+(e.a/10)+' = '+s.toFixed(0)+'</span>'+
+      '<span class="out">'+(exact(e.w,e.h,e.a)*100).toFixed(1)+'%</span>'+
+      '<span class="calcline">from the points table: '+fmtPct(byPoints(Math.round(s)))+'%</span>'+
+      '<button type="button" data-i="'+i+'">Open in calculator</button></div>';
+  }).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.ex button'),function(b){b.addEventListener('click',function(){var e=EX[+b.dataset.i];W.value=e.w;WR.value=e.w;A.value=e.a;AR.value=e.a;setH(e.h);document.querySelector('.calc').scrollIntoView({behavior:'smooth',block:'start'});});});
+
+  // grid at age 50
+  var g='';for(var w=3;w<=12;w++){g+='<tr><td>'+w+' mm</td>';for(var h=1;h<=4;h++){g+='<td class="num">'+fmtPct(exact(w,h,50))+'</td>';}g+='</tr>';}
+  document.getElementById('grid').innerHTML=g;
+  update();
+})();
+</script>
+</body>
+</html>
